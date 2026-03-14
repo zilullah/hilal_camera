@@ -1,56 +1,176 @@
-# Welcome to your Expo app 👋
+# 🌙 Hilal Camera
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**Hilal Camera** adalah aplikasi mobile berbasis AI untuk mendeteksi dan melacak **hilal (bulan sabit)** secara presisi menggunakan kamera, sensor perangkat, dan kalkulasi astronomi real-time. Dibangun sebagai portofolio proyek menggunakan **React Native + Expo**.
 
-## Get started
+---
 
-1. Install dependencies
+## 📱 Tentang Aplikasi
 
-   ```bash
-   npm install
-   ```
+Hilal adalah fenomena alam berupa kemunculan bulan sabit tipis setelah bulan baru, yang sangat penting dalam penentuan awal bulan dalam kalender Hijriah (seperti Ramadan dan Idulfitri). Aplikasi ini membantu pengguna untuk:
 
-2. Start the app
+- Mengetahui **posisi dan kondisi hilal** berdasarkan lokasi GPS saat ini
+- Melacak hilal secara visual menggunakan **Augmented Reality (AR)** pada kamera
+- Menganalisis foto hasil jepretan menggunakan **kecerdasan buatan (AI)** untuk menghitung kemungkinan terlihatnya hilal
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## ✨ Fitur Utama
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### 1. 🗺️ Dashboard Kondisi Hilal (Home Screen)
+Layar utama menampilkan kondisi hilal hari ini berdasarkan lokasi pengguna.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- **Altitude Bulan** — ketinggian bulan di atas cakrawala dalam derajat
+- **Elongasi** — sudut antara bulan dan matahari
+- **Visibility Score** — skor persentase kemungkinan hilal dapat terlihat
+- **Informasi Lokasi & Tanggal** — koordinat GPS dan tanggal saat ini
 
-## Get a fresh project
+**Teknologi yang digunakan:**
+| Teknologi | Fungsi |
+|---|---|
+| [`astronomy-engine`](https://github.com/cosinekitty/astronomy) | Kalkulasi posisi bulan & matahari menggunakan model astronomis presisi tinggi |
+| `expo-location` | Mendapatkan koordinat GPS pengguna secara real-time |
+| `react-native-paper` | Komponen UI (`Card`, `Button`, `Text`) |
 
-When you're ready, run:
+---
+
+### 2. 📷 Kamera AR Hilal Tracker (Camera Screen)
+Layar kamera dengan overlay Augmented Reality yang menunjukkan **prediksi posisi hilal** secara langsung di layar.
+
+- **AR Moon Marker** — penanda posisi hilal yang bergerak sesuai arah kamera
+- **Live Compass (Azimuth)** — pembacaan kompas real-time untuk orientasi perangkat
+- **Grid Kamera** — grid on/off untuk membantu framing dan stabilisasi
+- **Kontrol Exposure Digital** — slider exposure untuk menyesuaikan kecerahan gambar sebelum capture
+- **Capture Foto** — mengambil foto dan meneruskan ke layar analisis
+
+**Teknologi yang digunakan:**
+| Teknologi | Fungsi |
+|---|---|
+| `expo-camera` | Akses live camera feed dan pengambilan foto |
+| `expo-sensors` (Magnetometer) | Membaca data kompas (azimuth) untuk menentukan arah hadap perangkat |
+| `astronomy-engine` | Menghitung posisi azimuth & altitude bulan agar marker AR akurat |
+| `react-native-paper` | Komponen UI ikon dan tombol |
+| `expo-router` | Navigasi antar layar |
+
+---
+
+### 3. 🔬 Analisis AI Deteksi Hilal (Result Screen)
+Setelah foto diambil, gambar diproses oleh model AI untuk mendeteksi keberadaan hilal.
+
+Pipeline analisis gambar:
+1. **Konversi Grayscale** — mengubah gambar ke skala abu-abu
+2. **Glare Reduction (Sun Masking)** — menghilangkan area over-expose (terang >90%) agar silau matahari/lens flare tidak mengganggu analisis
+3. **Contrast Enhancement & Digital Exposure** — normalisasi kontras + kompensasi exposure sesuai setting pengguna
+4. **Brightness Score** — skor kecerahan area non-silau yang mengindikasikan objek terang tipis
+5. **Curve Score (Gradient Analysis)** — deteksi heuristik pola lengkungan tipis menggunakan analisis varians lokal
+6. **Final Probability** — skor akhir gabungan dari 3 sub-skor: Astronomy Model (60%), Brightness Analysis (25%), Curve Pattern (15%)
+
+Hasil ditampilkan sebagai:
+- **Persentase probabilitas** deteksi hilal
+- **Status Confidence** — HIGH / MEDIUM / LOW
+- **Metrik Detail** — breakdown skor brightness, curve, dan astronomy
+
+**Teknologi yang digunakan:**
+| Teknologi | Fungsi |
+|---|---|
+| `@tensorflow/tfjs` | Engine utama untuk komputasi tensor dan pemrosesan gambar |
+| `@tensorflow/tfjs-react-native` | Adapter TensorFlow.js untuk React Native + `decodeJpeg` |
+| `expo-file-system` | Membaca file foto sebagai Base64 untuk diproses TensorFlow |
+| `astronomy-engine` | Memberikan skor astronomi berdasarkan posisi bulan |
+
+---
+
+### 4. ✨ Splash Screen Animasi
+Splash screen kustom yang tampil saat aplikasi pertama dibuka.
+
+- Latar belakang gelap dengan efek **bintang-bintang**
+- **Animasi spring** pada icon aplikasi (fade in + scale)
+- **Glow emas pulsing** di belakang icon
+- **Loading bar** dengan teks "Initializing AI Engine..."
+- Fade-in halus ke halaman utama setelah AI siap
+
+**Teknologi yang digunakan:** `expo-splash-screen`, `React Native Animated API`
+
+---
+
+## 🛠️ Tech Stack
+
+| Kategori | Teknologi |
+|---|---|
+| Framework | [Expo](https://expo.dev) ~55 + [React Native](https://reactnative.dev) 0.83 |
+| Language | [TypeScript](https://www.typescriptlang.org) |
+| Navigation | [Expo Router](https://expo.github.io/router) (file-based routing) |
+| AI / Vision | [TensorFlow.js](https://www.tensorflow.org/js) + `tfjs-react-native` |
+| Astronomi | [astronomy-engine](https://github.com/cosinekitty/astronomy) |
+| UI Components | [React Native Paper](https://reactnativepaper.com) (MD3 Dark Theme) |
+| Kamera | `expo-camera` |
+| Sensor | `expo-sensors` (Magnetometer) |
+| Lokasi | `expo-location` |
+
+---
+
+## 🚀 Cara Menjalankan
+
+### Prerequisites
+- Node.js >= 18
+- Expo CLI
+- Android emulator / device, atau iOS simulator
+
+### Instalasi
 
 ```bash
-npm run reset-project
+# Clone repository
+git clone https://github.com/username/hilal-camera.git
+cd hilal-camera
+
+# Install dependencies
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Menjalankan Aplikasi
 
-### Other setup steps
+```bash
+# Semua platform
+npx expo start
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+# Android saja
+npm run android
 
-## Learn more
+# iOS saja
+npm run ios
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+> **Catatan:** Fitur kamera dan sensor memerlukan perangkat fisik. Gunakan [Expo Go](https://expo.dev/go) atau development build untuk testing di device nyata.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
+## 📁 Struktur Proyek
 
-Join our community of developers creating universal apps.
+```
+hilal-camera/
+├── src/
+│   ├── app/
+│   │   ├── _layout.tsx        # Root layout + splash screen animasi
+│   │   ├── index.tsx          # Home screen (dashboard kondisi hilal)
+│   │   ├── camera.tsx         # Kamera AR + sensor kompas
+│   │   └── result.tsx         # Hasil analisis AI
+│   ├── components/
+│   │   └── HilalCard.tsx      # Komponen kartu statistik hilal
+│   ├── services/
+│   │   ├── astronomyService.ts  # Kalkulasi posisi bulan/matahari
+│   │   ├── locationService.ts   # GPS location
+│   │   └── sensorService.ts     # Kompas magnetometer
+│   └── vision/
+│       └── hilalDetection.ts    # Pipeline analisis gambar TensorFlow.js
+├── assets/
+│   └── images/
+│       ├── icon.png             # App icon
+│       └── splash-icon.png      # Splash screen image
+├── app.json                     # Konfigurasi Expo
+└── package.json
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## 📄 Lisensi
+
+Proyek ini dibuat untuk keperluan portofolio pribadi.
