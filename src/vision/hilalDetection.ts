@@ -13,8 +13,22 @@ export const detectThinBrightCurve = async (
   exposureOffset: number = 0.5
 ): Promise<DetectionResult> => {
   try {
-    const imgB64 = await FileSystem.readAsStringAsync(imageUri, {
-      encoding: FileSystem.EncodingType.Base64,
+    console.log('Detecting Hilal with raw URI:', imageUri);
+    
+    const decodedUri = decodeURIComponent(imageUri);
+    const normalizedUri = decodedUri.startsWith('file://') ? decodedUri : `file://${decodedUri}`;
+    console.log('Normalized & Decoded URI:', normalizedUri);
+
+    const fileInfo = await FileSystem.getInfoAsync(normalizedUri);
+    console.log('Full File Info Object:', JSON.stringify(fileInfo, null, 2));
+    
+    if (!fileInfo.exists) {
+      console.error('File STILL does not exist at URI:', normalizedUri);
+      return { brightnessScore: 0, curveScore: 0, probability: 0 };
+    }
+
+    const imgB64 = await FileSystem.readAsStringAsync(normalizedUri, {
+      encoding: 'base64',
     });
     const imgBuffer = tf.util.encodeString(imgB64, 'base64').buffer;
     const rawImageData = new Uint8Array(imgBuffer);
@@ -22,42 +36,51 @@ export const detectThinBrightCurve = async (
     return tf.tidy(() => {
       const imageTensor = decodeJpeg(rawImageData);
       
-      // 1. Grayscale conversion (Standard weights)
       const grayscale = imageTensor.mean(2).expandDims(-1);
       
-      // 2. Glare Reduction (Sun Masking)
-      // Identify areas > 90% brightness and mask them out (set to 0) 
-      // This prevents the sun or lens flare from dominating the analysis
       const brightnessThreshold = 230; 
       const glareMask = grayscale.less(tf.scalar(brightnessThreshold)).cast('float32');
       const maskedGray = grayscale.mul(glareMask);
 
-      // 3. Contrast Enhancement & Digital Exposure
       const min = maskedGray.min();
       const max = maskedGray.max();
-      const normalized = maskedGray.sub(min).div(max.sub(min).add(tf.scalar(0.0001)));
+      const range = max.sub(min);
       
-      // Digital Exposure Compensation: exposureOffset (0.0 to 1.0)
-      // 0.5 is neutral. 1.0 is full brightness. 0.0 is dark.
+      const rangeVal = range.dataSync()[0];
+      let normalized;
+      if (rangeVal > 20) {
+        normalized = maskedGray.sub(min).div(range.add(tf.scalar(0.0001)));
+      } else {
+        normalized = maskedGray.div(tf.scalar(255));
+      }
+      
       const exposureScale = tf.scalar(exposureOffset * 2); 
       const enhanced = normalized.mul(exposureScale).clipByValue(0, 1).mul(tf.scalar(255));
 
-      // 4. Brightness Score (based on mid-high intensity pixels that aren't glare)
-      const topBrightness = enhanced.max().dataSync()[0];
-      const brightnessScore = Math.min(100, (topBrightness / 255) * 100);
+      const flattened = enhanced.flatten();
+      const k = Math.max(1, Math.floor(flattened.size * 0.001));
+      const { values: topValues } = tf.topk(flattened, k);
+      const topBrightness = topValues.mean().dataSync()[0];
+      
+      const imgMean = enhanced.mean().dataSync()[0];
+      let brightnessScore = Math.min(100, (topBrightness / 255) * 100);
+      
+      if (imgMean < 2) {
+        brightnessScore *= (imgMean / 2);
+      }
 
-      // 5. Heuristic Curve Detection (Simplified Gradient Analysis)
-      // Check for horizontal/vertical gradients that might indicate a thin edge
       const h = enhanced.shape[0] || 0;
       const w = enhanced.shape[1] || 0;
-      const reduced = tf.image.resizeBilinear(enhanced as tf.Tensor3D, [Math.floor(h/4), Math.floor(w/4)]);
+      const reduced = tf.image.resizeBilinear(enhanced as tf.Tensor3D, [Math.floor(h/8), Math.floor(w/8)]);
       
-      // Simple variation check: high variance in localized areas suggests edges/curves
       const mean = reduced.mean();
       const variance = reduced.sub(mean).square().mean();
-      const curveScore = Math.min(100, (variance.dataSync()[0] / 500) * 100);
+      let curveScore = Math.min(100, (variance.dataSync()[0] / 500) * 100);
+      
+      if (rangeVal < 15) {
+        curveScore *= 0.1;
+      }
 
-      // Final probability calculation
       const probability = (brightnessScore * 0.4 + curveScore * 0.6);
 
       return {

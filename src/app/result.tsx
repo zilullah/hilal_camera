@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Button, Card, Text, Title, useTheme } from 'react-native-paper';
 import { calculateHilalVisibilityScore } from '../services/astronomyService';
 import { DetectionResult, detectThinBrightCurve } from '../vision/hilalDetection';
@@ -9,7 +10,7 @@ export default function ResultScreen() {
   const { uri, exposure } = useLocalSearchParams<{ uri: string, exposure: string }>();
   const [visionData, setVisionData] = useState<DetectionResult | null>(null);
   const [loading, setLoading] = useState(true);
-  const [finalResult, setFinalResult] = useState<{ probability: number; status: string } | null>(null);
+  const [finalResult, setFinalResult] = useState<{ probability: number; astronomyScore: number; status: string } | null>(null);
   const router = useRouter();
   const theme = useTheme();
 
@@ -20,6 +21,8 @@ export default function ResultScreen() {
           const expVal = exposure ? parseFloat(exposure) : 0.5;
           const result = await detectThinBrightCurve(uri, expVal);
           setVisionData(result);
+          // 45 is a placeholder for actual astronomy logic which should come from params if available, 
+          // but for now we align with the service update.
           const combined = calculateHilalVisibilityScore(45, result.brightnessScore, result.curveScore);
           setFinalResult(combined);
         } catch (err) {
@@ -48,60 +51,73 @@ export default function ResultScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Card style={[styles.card, { backgroundColor: '#161B22' }]}>
-        <Card.Cover source={{ uri }} style={styles.cover} />
-        <Card.Content style={styles.content}>
-          <View style={styles.resultHeader}>
-            <Title style={styles.title}>Detection Probability</Title>
-            <Text 
-              style={[styles.probabilityText, { color: getStatusColor(finalResult?.status || 'low') }]}
-            >
-              {finalResult?.probability.toFixed(1)}%
-            </Text>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(finalResult?.status || 'low') + '22', borderColor: getStatusColor(finalResult?.status || 'low') }]}>
-              <Text style={[styles.statusText, { color: getStatusColor(finalResult?.status || 'low') }]}>
-                {finalResult?.status.toUpperCase()} CONFIDENCE
-              </Text>
-            </View>
-          </View>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
+        <View style={styles.container}>
+          <Card style={[styles.card, { backgroundColor: '#161B22' }]}>
+            <Card.Cover source={{ uri }} style={styles.cover} />
+            <Card.Content style={styles.content}>
+              <View style={styles.resultHeader}>
+                <Title style={styles.title}>Detection Probability</Title>
+                <Text 
+                  style={[styles.probabilityText, { color: getStatusColor(finalResult?.status || 'low') }]}
+                >
+                  {finalResult?.probability.toFixed(1)}%
+                </Text>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(finalResult?.status || 'low') + '22', borderColor: getStatusColor(finalResult?.status || 'low') }]}>
+                  <Text style={[styles.statusText, { color: getStatusColor(finalResult?.status || 'low') }]}>
+                    {finalResult?.status.toUpperCase()} CONFIDENCE
+                  </Text>
+                </View>
+              </View>
 
-          <View style={styles.divider} />
-          
-          <Title style={styles.detailTitle}>Detailed Metrics</Title>
-          <View style={styles.row}>
-            <Text style={styles.label}>Brightness Analysis</Text>
-            <Text style={styles.value}>{visionData?.brightnessScore.toFixed(1)}%</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Curve Pattern Match</Text>
-            <Text style={styles.value}>{visionData?.curveScore.toFixed(1)}%</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Astronomy Model</Text>
-            <Text style={styles.value}>45.0%</Text>
-          </View>
-        </Card.Content>
-        <Card.Actions style={styles.actions}>
-          <Button 
-            mode="contained" 
-            onPress={() => router.replace('/')} 
-            style={styles.doneButton}
-            labelStyle={styles.buttonLabel}
-          >
-            Finished
-          </Button>
-        </Card.Actions>
-      </Card>
-    </View>
+              <View style={styles.divider} />
+              
+              <Title style={styles.detailTitle}>Detailed Metrics</Title>
+              <View style={styles.row}>
+                <Text style={styles.label}>Brightness Analysis</Text>
+                <Text style={styles.value}>{visionData?.brightnessScore.toFixed(1)}%</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Curve Pattern Match</Text>
+                <Text style={styles.value}>{visionData?.curveScore.toFixed(1)}%</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Astronomy Model</Text>
+                <Text style={styles.value}>{finalResult?.astronomyScore.toFixed(1)}%</Text>
+              </View>
+            </Card.Content>
+            <Card.Actions style={styles.actions}>
+              <Button 
+                mode="contained" 
+                onPress={() => {
+                  console.log("Finished button pressed");
+                  router.replace('/');
+                }} 
+                style={styles.doneButton}
+                labelStyle={styles.buttonLabel}
+              >
+                Finished
+              </Button>
+            </Card.Actions>
+          </Card>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#0B0E14',
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#0B0E14',
     justifyContent: 'center',
   },
   card: {

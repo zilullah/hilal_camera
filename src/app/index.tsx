@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Text, useTheme } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { HilalCard } from '../components/HilalCard';
 import { calculateMoonPosition, MoonPosition } from '../services/astronomyService';
 import { DeviceLocation, getCurrentLocation } from '../services/locationService';
@@ -39,7 +40,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text variant="headlineMedium" style={styles.title}>
@@ -71,11 +72,15 @@ export default function HomeScreen() {
           <Text style={styles.hint}>Point your camera towards the western horizon at sunset</Text>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#0B0E14',
+  },
   container: {
     flex: 1,
     backgroundColor: '#0B0E14',

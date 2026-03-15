@@ -42,8 +42,15 @@ export const calculateHilalVisibilityScore = (
   astronomyScore: number,
   brightnessScore: number,
   curveScore: number
-): { probability: number; status: 'low' | 'medium' | 'high' } => {
-  const finalScore = astronomyScore * 0.6 + brightnessScore * 0.25 + curveScore * 0.15;
+): { probability: number; astronomyScore: number, status: 'low' | 'medium' | 'high' } => {
+  let finalScore = astronomyScore * 0.6 + brightnessScore * 0.25 + curveScore * 0.15;
+
+  const visionCombined = (brightnessScore + curveScore) / 2;
+  if (visionCombined < 5) {
+    finalScore *= 0.2; 
+  } else if (visionCombined < 15) {
+    finalScore *= 0.5;
+  }
 
   let status: 'low' | 'medium' | 'high' = 'low';
   if (finalScore > 70) status = 'high';
@@ -51,6 +58,7 @@ export const calculateHilalVisibilityScore = (
 
   return {
     probability: finalScore,
+    astronomyScore,
     status,
   };
 };

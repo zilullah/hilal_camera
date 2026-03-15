@@ -1,8 +1,10 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { IconButton, useTheme } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { calculateMoonPosition } from '../services/astronomyService';
 import { getCurrentLocation } from '../services/locationService';
 import { useDeviceOrientation } from '../services/sensorService';
@@ -51,10 +53,30 @@ export default function CameraScreen() {
   const takePicture = async () => {
     if (cameraRef.current) {
       const photo = await cameraRef.current.takePictureAsync();
-      router.push({
-        pathname: '/result',
-        params: { uri: photo.uri, exposure: exposure.toString() }
-      });
+      console.log('Original photo captured at URI:', photo.uri);
+      
+      try {
+        // Copy to documentDirectory for stability (cache can be cleared)
+        const filename = photo.uri.split('/').pop();
+        const newUri = `${FileSystem.documentDirectory}${filename}`;
+        await FileSystem.copyAsync({
+          from: photo.uri,
+          to: newUri
+        });
+        console.log('Photo copied to stable URI:', newUri);
+        
+        router.push({
+          pathname: '/result',
+          params: { uri: newUri, exposure: exposure.toString() }
+        });
+      } catch (err) {
+        console.error("Failed to copy photo to stable storage:", err);
+        // Fallback to original URI if copy fails
+        router.push({
+          pathname: '/result',
+          params: { uri: photo.uri, exposure: exposure.toString() }
+        });
+      }
     }
   };
 
@@ -71,82 +93,70 @@ export default function CameraScreen() {
       <CameraView 
         style={styles.camera} 
         ref={cameraRef}
-      >
-        {showGrid && (
-          <View style={styles.gridContainer} pointerEvents="none">
-            <View style={styles.gridRow} />
-            <View style={styles.gridRow} />
-            <View style={styles.gridCol} />
-            <View style={styles.gridCol} />
+      />
+      
+      {showGrid && (
+        <View style={styles.gridContainer} pointerEvents="none">
+          <View style={styles.gridRow} />
+          <View style={styles.gridRow} />
+          <View style={styles.gridCol} />
+          <View style={[styles.gridCol, { left: '66.66%' }]} />
+        </View>
+      )}
+
+      <SafeAreaView style={styles.overlay} pointerEvents="box-none">
+        {/* Top Bar Actions */}
+        <View style={styles.topBar}>
+          <IconButton
+            icon="chevron-left"
+            iconColor="white"
+            size={32}
+            onPress={() => router.back()}
+          />
+          <View style={styles.centerInfo}>
+            <Text style={styles.headerTitle}>HILAL TRACKER</Text>
+            <Text style={styles.locationText}>LIVE AUGMENTED REALITY</Text>
+          </View>
+          <IconButton
+            icon={showGrid ? "grid" : "grid-off"}
+            iconColor="white"
+            size={24}
+            onPress={() => setShowGrid(!showGrid)}
+          />
+        </View>
+
+        {/* Moon Marker */}
+        {(moonLeft > -50 && moonLeft < width + 50) && (
+          <View style={[styles.moonMarker, { left: moonLeft - 40, top: moonTop - 40 }]}>
+            <View style={styles.markerCircle}>
+              <IconButton icon="moon-waning-crescent" iconColor="#FFD700" size={32} />
+            </View>
+            <View style={styles.markerLabel}>
+              <Text style={styles.markerText}>PREDICTED HILAL</Text>
+              <Text style={styles.markerSubtext}>
+                Alt: {moonPos.altitude.toFixed(1)}° | Az: {moonPos.azimuth.toFixed(1)}°
+              </Text>
+            </View>
           </View>
         )}
 
-        <View style={styles.overlay}>
-          <View style={styles.topBar}>
-            <IconButton
-              icon="chevron-left"
-              iconColor="white"
-              size={32}
-              onPress={() => router.back()}
-            />
-            <View style={styles.centerInfo}>
-              <Text style={styles.headerTitle}>HILAL TRACKER</Text>
-              <Text style={styles.locationText}>LIVE AUGMENTED REALITY</Text>
-            </View>
-            <IconButton
-              icon={showGrid ? "grid" : "grid-off"}
-              iconColor="white"
-              size={24}
-              onPress={() => setShowGrid(!showGrid)}
-            />
+        {/* Side Controls */}
+        <View style={styles.bottomArea}>
+          <View style={styles.exposureArea}>
+            <IconButton icon="minus" iconColor="white" onPress={() => setExposure(Math.max(0, exposure - 0.1))} />
+            <Text style={styles.exposureText}>EV {exposure.toFixed(1)}</Text>
+            <IconButton icon="plus" iconColor="white" onPress={() => setExposure(Math.min(1, exposure + 0.1))} />
           </View>
 
-          {(moonLeft > -50 && moonLeft < width + 50) && (
-            <View style={[styles.moonMarker, { left: moonLeft - 40, top: moonTop - 40 }]}>
-              <View style={styles.markerCircle}>
-                <IconButton icon="moon-waning-crescent" iconColor="#FFD700" size={32} />
-              </View>
-              <View style={styles.markerLabel}>
-                <Text style={styles.markerText}>PREDICTED HILAL</Text>
-                <Text style={styles.markerSubtext}>Alt: {moonPos.altitude.toFixed(1)}° | Az: {moonPos.azimuth.toFixed(1)}°</Text>
-              </View>
-            </View>
-          )}
-
-          <View style={styles.rightControls}>
-            <Text style={styles.exposureLabel}>EXP</Text>
-            <View style={styles.exposureSliderContainer}>
-              {[1.0, 0.75, 0.5, 0.25, 0.0].map((val) => (
-                <TouchableOpacity 
-                  key={val} 
-                  style={[styles.exposureTick, exposure === val && styles.activeExposureTick]} 
-                  onPress={() => setExposure(val)}
-                />
-              ))}
-            </View>
-            <Text style={styles.exposureValue}>{(exposure * 2 - 1).toFixed(1)}</Text>
-          </View>
-
-          <View style={styles.bottomSection}>
-            <View style={styles.sensorInfo}>
-              <View style={styles.sensorItem}>
-                <Text style={styles.sensorLabel}>AZIMUTH</Text>
-                <Text style={styles.sensorValue}>{orientation.azimuth.toFixed(1)}°</Text>
-              </View>
-              <View style={[styles.sensorItem, styles.sensorDivider]}>
-                <Text style={styles.sensorLabel}>STABILITY</Text>
-                <Text style={styles.sensorValue}>OPTIMAL</Text>
-              </View>
-            </View>
-
-            <View style={styles.captureContainer}>
-              <TouchableOpacity style={styles.captureOuter} onPress={takePicture}>
-                <View style={[styles.captureInner, {backgroundColor: theme.colors.primary}]} />
-              </TouchableOpacity>
-            </View>
+          <View style={styles.captureRow}>
+            <IconButton icon="image-multiple" size={30} iconColor="white"  onPress={() => {}} />
+            <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+              <View style={styles.captureButtonInner} />
+            </TouchableOpacity>
+            <IconButton icon="cog" size={30} iconColor="white" onPress={() => {}} />
           </View>
         </View>
-      </CameraView>
+      </SafeAreaView>
     </View>
   );
 }
@@ -155,13 +165,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
-    justifyContent: 'center',
   },
   camera: {
     flex: 1,
   },
   overlay: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
     justifyContent: 'space-between',
   },
@@ -186,8 +195,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 50,
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     backgroundColor: 'rgba(0,0,0,0.3)',
   },
   centerInfo: {
@@ -195,13 +204,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '900',
     letterSpacing: 2,
   },
   locationText: {
     color: '#FFD700',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     letterSpacing: 1,
   },
@@ -219,9 +228,6 @@ const styles = StyleSheet.create({
     borderColor: '#FFD700',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#FFD700',
-    shadowRadius: 10,
-    shadowOpacity: 0.5,
   },
   markerLabel: {
     marginTop: 8,
@@ -239,93 +245,48 @@ const styles = StyleSheet.create({
   markerSubtext: {
     color: '#fff',
     fontSize: 8,
+    textAlign: 'center',
   },
-  rightControls: {
-    position: 'absolute',
-    right: 20,
-    top: height / 2 - 100,
+  bottomArea: {
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+  },
+  exposureArea: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.4)',
-    paddingVertical: 15,
     borderRadius: 20,
-    width: 40,
+    alignSelf: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 10,
   },
-  exposureLabel: {
-    color: '#aaa',
-    fontSize: 10,
+  exposureText: {
+    color: '#FFD700',
+    fontSize: 12,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginHorizontal: 10,
   },
-  exposureSliderContainer: {
-    height: 120,
+  captureRow: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  exposureTick: {
-    width: 8,
-    height: 2,
-    backgroundColor: '#555',
-  },
-  activeExposureTick: {
-    width: 16,
-    height: 3,
-    backgroundColor: '#FFD700',
-  },
-  exposureValue: {
-    color: '#FFD700',
-    fontSize: 10,
-    fontWeight: 'bold',
-    marginTop: 10,
-  },
-  bottomSection: {
-    paddingBottom: 40,
-    alignItems: 'center',
-  },
-  sensorInfo: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingVertical: 8,
     paddingHorizontal: 20,
-    borderRadius: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
   },
-  sensorItem: {
-    alignItems: 'center',
-    paddingHorizontal: 15,
-  },
-  sensorDivider: {
-    borderLeftWidth: 1,
-    borderLeftColor: 'rgba(255,255,255,0.2)',
-  },
-  sensorLabel: {
-    color: '#888',
-    fontSize: 8,
-    fontWeight: 'bold',
-  },
-  sensorValue: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  captureContainer: {
-    alignItems: 'center',
-  },
-  captureOuter: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  captureButton: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     borderWidth: 4,
     borderColor: 'white',
-    padding: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  captureInner: {
-    width: '100%',
-    height: '100%',
+  captureButtonInner: {
+    width: 60,
+    height: 60,
     borderRadius: 30,
+    backgroundColor: '#FFD700',
   },
   permissionButton: {
     backgroundColor: '#FFD700',
