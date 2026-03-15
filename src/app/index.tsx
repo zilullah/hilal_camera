@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Button, Text, useTheme } from 'react-native-paper';
+import { ActivityIndicator, Button, IconButton, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { HilalCard } from '../components/HilalCard';
 import { calculateMoonPosition, MoonPosition } from '../services/astronomyService';
 import { DeviceLocation, getCurrentLocation } from '../services/locationService';
@@ -13,6 +14,12 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
+
+  const toggleLanguage = () => {
+    const nextLang = i18n.language === 'id' ? 'en' : 'id';
+    i18n.changeLanguage(nextLang);
+  };
 
   useEffect(() => {
     async function init() {
@@ -34,23 +41,33 @@ export default function HomeScreen() {
     return (
       <View style={[styles.center, { backgroundColor: '#0B0E14' }]}>
         <ActivityIndicator animating={true} color={theme.colors.primary} size="large" />
-        <Text style={{ marginTop: 20, color: '#aaa' }}>Calculating Hilal Position...</Text>
+        <Text style={{ marginTop: 20, color: '#aaa' }}>{t('calculating_hilal')}</Text>
       </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <View style={styles.topActions}>
+        <IconButton 
+          icon="translate" 
+          mode="contained"
+          containerColor="rgba(255,255,255,0.05)"
+          iconColor={theme.colors.primary}
+          size={24}
+          onPress={toggleLanguage}
+        />
+      </View>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text variant="headlineMedium" style={styles.title}>
-            HILAL<Text style={{ color: theme.colors.primary }}> CAMERA</Text>
+            {t('welcome_title').split(' ')[0]}<Text style={{ color: theme.colors.primary }}> {t('welcome_title').split(' ')[1]}</Text>
           </Text>
-          <Text style={styles.subtitle}>Precision Moon Tracking & Detection</Text>
+          <Text style={styles.subtitle}>{t('welcome_subtitle')}</Text>
         </View>
         
         <HilalCard 
-          title="Condition Today"
+          title={t('condition_today')}
           altitude={moonData?.moonAltitude}
           elongation={moonData?.elongation}
           probability={moonData?.visibilityScore}
@@ -67,9 +84,9 @@ export default function HomeScreen() {
             labelStyle={styles.buttonLabel}
             icon="camera-iris"
           >
-            Open Detection Camera
+            {t('open_camera')}
           </Button>
-          <Text style={styles.hint}>Point your camera towards the western horizon at sunset</Text>
+          <Text style={styles.hint}>{t('point_camera_hint')}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -81,13 +98,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0B0E14',
   },
+  topActions: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    position: 'absolute',
+    top: 50,
+    right: 0,
+    zIndex: 10,
+  },
   container: {
     flex: 1,
     backgroundColor: '#0B0E14',
   },
   content: {
     padding: 24,
-    paddingTop: 60,
+    paddingTop: 80,
   },
   center: {
     flex: 1,

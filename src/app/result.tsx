@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Button, Card, Text, Title, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { calculateHilalVisibilityScore } from '../services/astronomyService';
 import { DetectionResult, detectThinBrightCurve } from '../vision/hilalDetection';
 
@@ -13,6 +14,7 @@ export default function ResultScreen() {
   const [finalResult, setFinalResult] = useState<{ probability: number; astronomyScore: number; status: string } | null>(null);
   const router = useRouter();
   const theme = useTheme();
+  const { t } = useTranslation();
 
   useEffect(() => {
     async function analyze() {
@@ -39,7 +41,7 @@ export default function ResultScreen() {
     return (
       <View style={[styles.center, { backgroundColor: '#0B0E14' }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={{ marginTop: 20, color: '#aaa' }}>Analyzing Hilal Image...</Text>
+        <Text style={{ marginTop: 20, color: '#aaa' }}>{t('analyzing_image')}</Text>
       </View>
     );
   }
@@ -58,7 +60,7 @@ export default function ResultScreen() {
             <Card.Cover source={{ uri }} style={styles.cover} />
             <Card.Content style={styles.content}>
               <View style={styles.resultHeader}>
-                <Title style={styles.title}>Detection Probability</Title>
+                <Title style={styles.title}>{t('detection_probability')}</Title>
                 <Text 
                   style={[styles.probabilityText, { color: getStatusColor(finalResult?.status || 'low') }]}
                 >
@@ -66,24 +68,24 @@ export default function ResultScreen() {
                 </Text>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(finalResult?.status || 'low') + '22', borderColor: getStatusColor(finalResult?.status || 'low') }]}>
                   <Text style={[styles.statusText, { color: getStatusColor(finalResult?.status || 'low') }]}>
-                    {finalResult?.status.toUpperCase()} CONFIDENCE
+                    {finalResult?.status.toUpperCase()} {t('confidence')}
                   </Text>
                 </View>
               </View>
 
               <View style={styles.divider} />
               
-              <Title style={styles.detailTitle}>Detailed Metrics</Title>
+              <Title style={styles.detailTitle}>{t('detailed_metrics')}</Title>
               <View style={styles.row}>
-                <Text style={styles.label}>Brightness Analysis</Text>
+                <Text style={styles.label}>{t('brightness_analysis')}</Text>
                 <Text style={styles.value}>{visionData?.brightnessScore.toFixed(1)}%</Text>
               </View>
               <View style={styles.row}>
-                <Text style={styles.label}>Curve Pattern Match</Text>
+                <Text style={styles.label}>{t('curve_pattern')}</Text>
                 <Text style={styles.value}>{visionData?.curveScore.toFixed(1)}%</Text>
               </View>
               <View style={styles.row}>
-                <Text style={styles.label}>Astronomy Model</Text>
+                <Text style={styles.label}>{t('astronomy_model')}</Text>
                 <Text style={styles.value}>{finalResult?.astronomyScore.toFixed(1)}%</Text>
               </View>
             </Card.Content>
@@ -97,7 +99,7 @@ export default function ResultScreen() {
                 style={styles.doneButton}
                 labelStyle={styles.buttonLabel}
               >
-                Finished
+                {t('finished')}
               </Button>
             </Card.Actions>
           </Card>

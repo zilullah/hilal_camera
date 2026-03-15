@@ -5,6 +5,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from "react";
 import { Animated, Image, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { MD3DarkTheme, PaperProvider } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
+import '../i18n';
 
 // Keep the native splash screen visible while we initialize
 SplashScreen.preventAutoHideAsync();
@@ -21,6 +23,7 @@ const theme = {
 };
 
 function AppSplashScreen({ onFinish }: { onFinish: () => void }) {
+  const { t } = useTranslation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.85)).current;
   const textFadeAnim = useRef(new Animated.Value(0)).current;
@@ -105,9 +108,9 @@ function AppSplashScreen({ onFinish }: { onFinish: () => void }) {
       {/* Title & subtitle */}
       <Animated.View style={[splashStyles.textContainer, { opacity: textFadeAnim }]}>
         <Text style={splashStyles.title}>
-          HILAL<Text style={splashStyles.titleAccent}> CAMERA</Text>
+          {t('welcome_title').split(' ')[0]}<Text style={splashStyles.titleAccent}> {t('welcome_title').split(' ')[1]}</Text>
         </Text>
-        <Text style={splashStyles.subtitle}>Precision Moon Tracking & Detection</Text>
+        <Text style={splashStyles.subtitle}>{t('welcome_subtitle')}</Text>
       </Animated.View>
 
       {/* Loading indicator */}
@@ -122,7 +125,7 @@ function AppSplashScreen({ onFinish }: { onFinish: () => void }) {
             ]}
           />
         </View>
-        <Text style={splashStyles.loaderText}>Initializing AI Engine...</Text>
+        <Text style={splashStyles.loaderText}>{t('initializing_ai')}</Text>
       </Animated.View>
     </View>
   );

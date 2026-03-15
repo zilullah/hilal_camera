@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { IconButton, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { calculateMoonPosition } from '../services/astronomyService';
 import { getCurrentLocation } from '../services/locationService';
 import { useDeviceOrientation } from '../services/sensorService';
@@ -17,6 +18,7 @@ export default function CameraScreen() {
   const orientation = useDeviceOrientation();
   const cameraRef = useRef<any>(null);
   const theme = useTheme();
+  const { t } = useTranslation();
 
   const [moonPos, setMoonPos] = useState({ azimuth: 270, altitude: 0 });
   const [exposure, setExposure] = useState(0.5);
@@ -41,10 +43,10 @@ export default function CameraScreen() {
     return (
       <View style={styles.container}>
         <Text style={{ textAlign: 'center', color: '#fff', marginBottom: 20 }}>
-          Camera access is required for Hilal detection.
+          {t('camera_access_required')}
         </Text>
         <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-          <Text style={styles.permissionButtonText}>Grant Permission</Text>
+          <Text style={styles.permissionButtonText}>{t('grant_permission')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -114,8 +116,8 @@ export default function CameraScreen() {
             onPress={() => router.back()}
           />
           <View style={styles.centerInfo}>
-            <Text style={styles.headerTitle}>HILAL TRACKER</Text>
-            <Text style={styles.locationText}>LIVE AUGMENTED REALITY</Text>
+            <Text style={styles.headerTitle}>{t('hilal_tracker')}</Text>
+            <Text style={styles.locationText}>{t('live_ar')}</Text>
           </View>
           <IconButton
             icon={showGrid ? "grid" : "grid-off"}
@@ -132,9 +134,9 @@ export default function CameraScreen() {
               <IconButton icon="moon-waning-crescent" iconColor="#FFD700" size={32} />
             </View>
             <View style={styles.markerLabel}>
-              <Text style={styles.markerText}>PREDICTED HILAL</Text>
+              <Text style={styles.markerText}>{t('predicted_hilal')}</Text>
               <Text style={styles.markerSubtext}>
-                Alt: {moonPos.altitude.toFixed(1)}° | Az: {moonPos.azimuth.toFixed(1)}°
+                {t('altitude')}: {moonPos.altitude.toFixed(1)}° | Az: {moonPos.azimuth.toFixed(1)}°
               </Text>
             </View>
           </View>

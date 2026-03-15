@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Text, Title, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 interface StatRowProps {
   label: string;
@@ -33,7 +34,7 @@ interface HilalCardProps {
 }
 
 export const HilalCard = ({ 
-  title = "Visibility Stats", 
+  title, 
   altitude, 
   elongation, 
   probability,
@@ -41,20 +42,23 @@ export const HilalCard = ({
   dateInfo 
 }: HilalCardProps) => {
   const theme = useTheme();
+  const { t } = useTranslation();
+  
+  const displayTitle = title || t('condition_today');
   
   return (
     <Card style={[styles.card, { backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }]}>
       <Card.Content>
-        <Title style={styles.cardTitle}>{title}</Title>
+        <Title style={styles.cardTitle}>{displayTitle}</Title>
         <View style={styles.statsContainer}>
-          {altitude !== undefined && <StatRow label="Moon Altitude" value={`${altitude.toFixed(2)}°`} />}
-          {elongation !== undefined && <StatRow label="Elongation" value={`${elongation.toFixed(2)}°`} />}
+          {altitude !== undefined && <StatRow label={t('altitude')} value={`${altitude.toFixed(2)}°`} />}
+          {elongation !== undefined && <StatRow label={t('elongation')} value={`${elongation.toFixed(2)}°`} />}
           
           <View style={styles.divider} />
           
           {probability !== undefined && (
             <View style={styles.probabilityContainer}>
-              <Text style={styles.probabilityLabel}>Visibility Score</Text>
+              <Text style={styles.probabilityLabel}>{t('visibility_probability')}</Text>
               <Text style={[styles.probabilityValue, { color: theme.colors.primary }]}>
                 {probability.toFixed(1)}%
               </Text>

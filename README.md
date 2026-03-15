@@ -11,6 +11,7 @@ Hilal adalah fenomena alam berupa kemunculan bulan sabit tipis setelah bulan bar
 - Mengetahui **posisi dan kondisi hilal** berdasarkan lokasi GPS saat ini
 - Melacak hilal secara visual menggunakan **Augmented Reality (AR)** pada kamera
 - Menganalisis foto hasil jepretan menggunakan **kecerdasan buatan (AI)** untuk menghitung kemungkinan terlihatnya hilal
+- Mendukung **Multi-bahasa** (Bahasa Indonesia & Inggris)
 
 ---
 
@@ -89,6 +90,19 @@ Splash screen kustom yang tampil saat aplikasi pertama dibuka.
 - Fade-in halus ke halaman utama setelah AI siap
 
 **Teknologi yang digunakan:** `expo-splash-screen`, `React Native Animated API`
+92: 
+93: ---
+94: 
+95: ### 5. 🌐 Internationalization (i18n)
+96: Aplikasi mendukung Bahasa Indonesia (default) dan Bahasa Inggris.
+97: 
+98: - **Language Toggle** — Tombol pada Home Screen untuk mengganti bahasa secara instan
+99: - **Local Persistance** — Menggunakan `expo-localization` untuk mendeteksi preferensi perangkat
+100: 
+101: **Teknologi yang digunakan:** `i18next`, `react-i18next`, `expo-localization`
+102: 
+103: ---
+104: 
 
 ---
 
@@ -105,6 +119,7 @@ Splash screen kustom yang tampil saat aplikasi pertama dibuka.
 | Kamera | `expo-camera` |
 | Sensor | `expo-sensors` (Magnetometer) |
 | Lokasi | `expo-location` |
+| i18n | `i18next` + `react-i18next` |
 
 ---
 
@@ -159,6 +174,9 @@ hilal-camera/
 │   │   ├── astronomyService.ts  # Kalkulasi posisi bulan/matahari
 │   │   ├── locationService.ts   # GPS location
 │   │   └── sensorService.ts     # Kompas magnetometer
+│   ├── i18n/
+│   │   ├── index.ts             # Konfigurasi i18next
+│   │   └── locales/             # JSON translation files (en, id)
 │   └── vision/
 │       └── hilalDetection.ts    # Pipeline analisis gambar TensorFlow.js
 ├── assets/
